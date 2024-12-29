@@ -16,21 +16,20 @@ module Onellm
   # @note The client requires a valid configuration object that has been properly initialized
   #   with API keys and other necessary settings.
   class Client
-    def initialize(configuration)
+    def initialize(configuration = Onellm.configuration, provider_registry = Onellm.provider_registry)
       @configuration = configuration
+      @provider_registry = provider_registry
       @configuration.validate!
     end
 
     def complete(model:, messages:, stream: false, &block)
-      # Implementation of the complete method
-      # Handle different providers based on model prefix
-      # Implement streaming support
-      # Return response in OpenAI format
-      raise NotImplementedError, 'Client#complete not yet implemented'
+      provider_class = @provider_registry.get_provider(model)
+      provider = provider_class.new(@configuration)
+      provider.complete(model: model, messages: messages, stream: stream, &block)
     end
 
     private
 
-    attr_reader :configuration
+    attr_reader :configuration, :provider_registry
   end
 end

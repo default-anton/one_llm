@@ -3,6 +3,9 @@
 require_relative 'one_llm/version'
 require_relative 'one_llm/configuration'
 require_relative 'one_llm/client'
+require_relative 'one_llm/provider'
+require_relative 'one_llm/provider_registry'
+require_relative 'one_llm/providers/openai_provider'
 
 # Onellm is a Ruby SDK for interacting with multiple LLM APIs in OpenAI format.
 #
@@ -43,6 +46,13 @@ module Onellm
       @configuration ||= Configuration.new
     end
 
+    def provider_registry
+      @provider_registry ||= ProviderRegistry.new.tap do |registry|
+        registry.register('openai', OpenAIProvider)
+        # Add more providers here
+      end
+    end
+
     def complete(model:, messages:, stream: false, &block)
       client.complete(model: model, messages: messages, stream: stream, &block)
     end
@@ -50,7 +60,7 @@ module Onellm
     private
 
     def client
-      @client ||= Client.new(configuration)
+      @client ||= Client.new(configuration, provider_registry)
     end
   end
 end
