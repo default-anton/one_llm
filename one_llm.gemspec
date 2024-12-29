@@ -4,7 +4,7 @@ require_relative "lib/one_llm/version"
 
 Gem::Specification.new do |spec|
   spec.name = "one_llm"
-  spec.version = OneLlm::VERSION
+  spec.version = Onellm::VERSION
   spec.authors = ["Anton Kuzmenko"]
   spec.email = ["1917237+default-anton@users.noreply.github.com"]
 

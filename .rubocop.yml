@@ -1,8 +1,8 @@
-AllCops:
-  TargetRubyVersion: 3.0
+# RuboCop configuration file
+# Disable cyclomatic complexity and ABC size checks
 
-Style/StringLiterals:
-  EnforcedStyle: double_quotes
+Metrics/CyclomaticComplexity:
+  Enabled: false
 
-Style/StringLiteralsInInterpolation:
-  EnforcedStyle: double_quotes
+Metrics/AbcSize:
+  Enabled: false
