@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "one_llm"
+require "onellm"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

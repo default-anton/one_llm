@@ -1,24 +1,24 @@
 # frozen_string_literal: true
 
-require_relative "lib/one_llm/version"
+require_relative "lib/onellm/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "one_llm"
+  spec.name = "onellm"
   spec.version = Onellm::VERSION
   spec.authors = ["Anton Kuzmenko"]
   spec.email = ["1917237+default-anton@users.noreply.github.com"]
 
   spec.summary = "A unified interface for all LLM providers. One gem to rule them all"
   spec.description = "A unified interface for all LLM providers. One gem to rule them all"
-  spec.homepage = "https://github.com/default-anton/one_llm"
+  spec.homepage = "https://github.com/default-anton/onellm"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.0.0"
 
   spec.metadata["allowed_push_host"] = "TODO: Set to your gem server 'https://example.com'"
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/default-anton/one_llm"
-  spec.metadata["changelog_uri"] = "https://github.com/default-anton/one_llm/blob/main/CHANGELOG.md"
+  spec.metadata["source_code_uri"] = "https://github.com/default-anton/onellm"
+  spec.metadata["changelog_uri"] = "https://github.com/default-anton/onellm/blob/main/CHANGELOG.md"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.

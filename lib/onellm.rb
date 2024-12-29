@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
-require_relative 'one_llm/version'
-require_relative 'one_llm/configuration'
-require_relative 'one_llm/client'
-require_relative 'one_llm/provider'
-require_relative 'one_llm/provider_registry'
-require_relative 'one_llm/providers/openai_provider'
+require_relative 'onellm/version'
+require_relative 'onellm/configuration'
+require_relative 'onellm/client'
+require_relative 'onellm/provider'
+require_relative 'onellm/provider_registry'
+require_relative 'onellm/providers/openai_provider'
+require_relative 'onellm/response'
 
 # Onellm is a Ruby SDK for interacting with multiple LLM APIs in OpenAI format.
 #
@@ -35,7 +36,7 @@ require_relative 'one_llm/providers/openai_provider'
 module Onellm
   class Error < StandardError; end
   class ConfigurationError < Error; end
-  class APIError < Error; end
+  class APIError < StandardError; end
 
   class << self
     def configure

@@ -1,8 +1,11 @@
 # RuboCop configuration file
-# Disable cyclomatic complexity and ABC size checks
+# Disable cyclomatic complexity, ABC size, and method length checks
 
 Metrics/CyclomaticComplexity:
   Enabled: false
 
 Metrics/AbcSize:
+  Enabled: false
+
+Metrics/MethodLength:
   Enabled: false

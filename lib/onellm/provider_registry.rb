@@ -15,6 +15,7 @@ module Onellm
       prefix = model.split('/').first
       provider_class = @providers[prefix]
       raise "Unsupported provider: #{prefix}" unless provider_class
+
       provider_class
     end
   end

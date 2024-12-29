@@ -25,7 +25,9 @@ module Onellm
     def complete(model:, messages:, stream: false, &block)
       provider_class = @provider_registry.get_provider(model)
       provider = provider_class.new(@configuration)
-      provider.complete(model: model, messages: messages, stream: stream, &block)
+      response = provider.complete(model: model.split('/').last, messages: messages, stream: stream, &block)
+
+      Response.new(response)
     end
 
     private

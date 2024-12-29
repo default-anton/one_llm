@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 module Onellm
-  class ConfigurationError < StandardError; end
-
   # Configuration class for managing API keys and settings for Onellm
   #
   # @attr [String] openai_api_key API key for OpenAI services
@@ -10,7 +8,7 @@ module Onellm
   class Configuration
     # Format patterns for API keys
     OPENAI_KEY_FORMAT = /^sk-[a-zA-Z0-9]{48}$/
-    ANTHROPIC_KEY_FORMAT = /^sk-ant-[a-zA-Z0-9]{40}$/
+    # ANTHROPIC_KEY_FORMAT = /^sk-[a-zA-Z0-9]{40}$/
 
     attr_accessor :openai_api_key, :anthropic_api_key
 
@@ -30,7 +28,7 @@ module Onellm
       end
 
       errors << 'Invalid OpenAI API key format' if openai_api_key && !valid_openai_key?(openai_api_key)
-      errors << 'Invalid Anthropic API key format' if anthropic_api_key && !valid_anthropic_key?(anthropic_api_key)
+      # errors << 'Invalid Anthropic API key format' if anthropic_api_key && !valid_anthropic_key?(anthropic_api_key)
 
       raise ConfigurationError, errors.join("\n") unless errors.empty?
     end
