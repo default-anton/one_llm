@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require 'base64'
 
 RSpec.describe Onellm::OpenAIProvider do
   let(:provider) { Onellm::Client.new }
@@ -53,6 +54,63 @@ RSpec.describe Onellm::OpenAIProvider do
       expect do
         provider.complete(model: valid_model, messages: valid_messages)
       end.to raise_error(Onellm::ConfigurationError, /Invalid OpenAI API key format/)
+    end
+
+    it 'handles image content in messages' do
+      image_url = 'https://raw.githubusercontent.com/default-anton/onellm/refs/heads/main/spec/data/Delta_Air_Lines_B767-332_N130DL%20Small.jpeg'
+      messages = [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: "What's in this image?"
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: image_url
+              }
+            }
+          ]
+        }
+      ]
+
+      response = provider.complete(model: valid_model, messages: messages)
+
+      expect(response).to be_a(Onellm::Response)
+      expect(response.choices).to be_an(Array)
+      expect(response.choices.first.message.content).to be_a(String)
+    end
+
+    it 'handles Base64 encoded local image content in messages' do
+      # Read and encode the local image file
+      image_path = Pathname(__dir__).parent.join('data', 'Delta_Air_Lines_B767-332_N130DL Small.jpeg')
+      base64_image = Base64.strict_encode64(image_path.read(mode: 'rb'))
+
+      messages = [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: "What's in this image?"
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: "data:image/jpeg;base64,#{base64_image}"
+              }
+            }
+          ]
+        }
+      ]
+
+      response = provider.complete(model: valid_model, messages: messages)
+
+      expect(response).to be_a(Onellm::Response)
+      expect(response.choices).to be_an(Array)
+      expect(response.choices.first.message.content).to be_a(String)
     end
   end
 end
