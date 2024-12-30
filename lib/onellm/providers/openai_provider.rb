@@ -12,6 +12,37 @@ module Onellm
     DEFAULT_TIMEOUT = 30 # seconds
     MAX_RETRIES = 3
 
+    AVAILABLE_MODELS = [
+      'o1',
+      'o1-mini',
+      'o1-mini-2024-09-12',
+      'o1-preview',
+      'o1-preview-2024-09-12',
+      'gpt-4o',
+      'gpt-4o-mini',
+      'gpt-4o-audio-preview',
+      'gpt-4o-mini-audio-preview-2024-12-17',
+      'gpt-4o-mini-audio-preview',
+      'gpt-4o-mini-2024-07-18',
+      'gpt-4o-audio-preview-2024-12-17',
+      'gpt-4o-audio-preview-2024-10-01',
+      'gpt-4o-2024-11-20',
+      'gpt-4o-2024-08-06',
+      'gpt-4o-2024-05-13',
+      'gpt-4-turbo-preview',
+      'gpt-4-turbo-2024-04-09',
+      'gpt-4-turbo',
+      'gpt-4-1106-preview',
+      'gpt-4-0613',
+      'gpt-4-0125-preview',
+      'gpt-4',
+      'gpt-3.5-turbo-16k',
+      'gpt-3.5-turbo-1106',
+      'gpt-3.5-turbo-0125',
+      'gpt-3.5-turbo',
+      'chatgpt-4o-latest'
+    ].freeze
+
     def complete(model:, messages:, stream: false, &block)
       validate_inputs(model, messages)
 
@@ -30,6 +61,8 @@ module Onellm
       else
         handle_standard_response(http, request)
       end
+    rescue ArgumentError, Onellm::Error
+      raise
     rescue StandardError => e
       handle_error(e)
     end
@@ -37,12 +70,18 @@ module Onellm
     private
 
     def validate_inputs(model, messages)
-      raise ArgumentError, 'Model cannot be empty' if model.to_s.strip.empty?
+      validate_model(model)
       raise ArgumentError, 'Messages cannot be empty' if messages.empty?
 
       messages.each do |message|
         raise ArgumentError, 'Each message must have role and content' unless message[:role] && message[:content]
       end
+    end
+
+    def validate_model(model)
+      return if AVAILABLE_MODELS.include?(model)
+
+      raise ArgumentError, "Invalid model: #{model}. Available models: #{AVAILABLE_MODELS.join(', ')}"
     end
 
     def configure_http(http)
@@ -76,7 +115,7 @@ module Onellm
       request['Accept'] = 'text/event-stream'
 
       http.request(request) do |response|
-        handle_http_response(response)
+        handle_http_response(response, stream: true)
 
         response.read_body do |chunk|
           process_stream_chunk(chunk, &block)
@@ -85,9 +124,11 @@ module Onellm
     end
 
     # TODO: better error handling. define error classes
-    def handle_http_response(response)
+    def handle_http_response(response, stream: false)
       case response
       when Net::HTTPSuccess
+        return if stream
+
         JSON.parse(response.body, symbolize_names: true)
       when Net::HTTPClientError
         raise APIError, "Client error: #{response.code} - #{response.body}"

@@ -7,6 +7,7 @@ require_relative 'onellm/provider'
 require_relative 'onellm/provider_registry'
 require_relative 'onellm/providers/openai_provider'
 require_relative 'onellm/response'
+require_relative 'onellm/delta_response'
 
 # Onellm is a Ruby SDK for interacting with multiple LLM APIs in OpenAI format.
 #

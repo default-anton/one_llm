@@ -1,6 +1,3 @@
-# RuboCop configuration file
-# Disable cyclomatic complexity, ABC size, and method length checks
-
 Metrics/CyclomaticComplexity:
   Enabled: false
 
@@ -8,4 +5,14 @@ Metrics/AbcSize:
   Enabled: false
 
 Metrics/MethodLength:
+  Enabled: false
+
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/**/*_spec.rb'
+
+Metrics/ClassLength:
+  Enabled: false
+
+Metrics/ModuleLength:
   Enabled: false
