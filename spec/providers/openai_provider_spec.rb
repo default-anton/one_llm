@@ -40,10 +40,46 @@ RSpec.describe Onellm::OpenAIProvider do
       end.to raise_error(ArgumentError, /Messages cannot be empty/)
     end
 
-    it 'raises error for invalid message format' do
+    it 'raises error for invalid message structure' do
       expect do
         provider.complete(model: valid_model, messages: [{ role: 'user' }])
-      end.to raise_error(ArgumentError, /Each message must have role and content/)
+      end.to raise_error(ArgumentError, /Message must be a hash with :role and :content keys only/)
+    end
+
+    it 'raises error for invalid role' do
+      expect do
+        provider.complete(model: valid_model, messages: [{ role: 'invalid', content: 'test' }])
+      end.to raise_error(ArgumentError, /Invalid role: invalid. Valid roles are: system, user, assistant/)
+    end
+
+    it 'raises error for invalid content type' do
+      expect do
+        provider.complete(model: valid_model, messages: [{ role: 'user', content: 123 }])
+      end.to raise_error(ArgumentError, /Content must be a string or an array of content parts/)
+    end
+
+    it 'raises error for invalid content array' do
+      expect do
+        provider.complete(model: valid_model, messages: [{ role: 'user', content: [{ type: 'invalid' }] }])
+      end.to raise_error(ArgumentError, /Invalid content part. Each part must have :type \(text, image_url\)/)
+    end
+
+    it 'raises error for missing text part in content array' do
+      expect do
+        provider.complete(model: valid_model,
+                          messages: [{ role: 'user',
+                                       content: [{ type: 'image_url',
+                                                   image_url: { url: 'https://example.com/image.jpg' } }] }])
+      end.to raise_error(ArgumentError, /Content array must contain at least one text part/)
+    end
+
+    it 'raises error for invalid image URL' do
+      expect do
+        provider.complete(model: valid_model,
+                          messages: [{ role: 'user',
+                                       content: [{ type: 'text', text: 'test' },
+                                                 { type: 'image_url', image_url: { url: 'invalid' } }] }])
+      end.to raise_error(ArgumentError, %r{Image URL must be a valid HTTP/HTTPS URL or data URI})
     end
 
     it 'raises error for invalid API key' do

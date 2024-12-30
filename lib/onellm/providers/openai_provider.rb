@@ -69,13 +69,88 @@ module Onellm
 
     private
 
+    VALID_ROLES = %w[system user assistant].freeze
+    VALID_CONTENT_TYPES = %w[text image_url].freeze
+    VALID_DATA_URI_REGEX = %r{\Adata:image/(jpeg|png|gif|webp);base64,}
+
     def validate_inputs(model, messages)
       validate_model(model)
       raise ArgumentError, 'Messages cannot be empty' if messages.empty?
 
       messages.each do |message|
-        raise ArgumentError, 'Each message must have role and content' unless message[:role] && message[:content]
+        validate_message_structure(message)
+        validate_role(message[:role])
+        validate_content(message[:content])
       end
+    end
+
+    def validate_message_structure(message)
+      return if message.is_a?(Hash) && message.keys.sort == %i[content role].sort
+
+      raise ArgumentError, 'Message must be a hash with :role and :content keys only'
+    end
+
+    def validate_role(role)
+      return if VALID_ROLES.include?(role)
+
+      raise ArgumentError, "Invalid role: #{role}. Valid roles are: #{VALID_ROLES.join(', ')}"
+    end
+
+    def validate_content(content)
+      if content.is_a?(String)
+        nil
+      elsif content.is_a?(Array)
+        validate_content_array(content)
+      else
+        raise ArgumentError, 'Content must be a string or an array of content parts'
+      end
+    end
+
+    def validate_content_array(content_array)
+      if content_array.none? { |part| part[:type] == 'text' }
+        raise ArgumentError, 'Content array must contain at least one text part'
+      end
+
+      content_array.each do |part|
+        validate_content_part(part)
+      end
+    end
+
+    def validate_content_part(part)
+      unless part.is_a?(Hash) && part[:type] && VALID_CONTENT_TYPES.include?(part[:type])
+        raise ArgumentError, "Invalid content part. Each part must have :type (#{VALID_CONTENT_TYPES.join(', ')})"
+      end
+
+      case part[:type]
+      when 'text'
+        validate_text_part(part)
+      when 'image_url'
+        validate_image_url_part(part)
+      end
+    end
+
+    def validate_text_part(part)
+      return if part[:text].is_a?(String)
+
+      raise ArgumentError, 'Text content part must have :text key with string value'
+    end
+
+    def validate_image_url_part(part)
+      unless part[:image_url].is_a?(Hash) && part[:image_url][:url]
+        raise ArgumentError, 'Image URL content part must have :image_url key with :url'
+      end
+
+      url = part[:image_url][:url]
+      return if valid_url?(url)
+
+      raise ArgumentError, 'Image URL must be a valid HTTP/HTTPS URL or data URI'
+    end
+
+    def valid_url?(url)
+      uri = URI.parse(url)
+      uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS) || VALID_DATA_URI_REGEX.match?(url)
+    rescue URI::InvalidURIError
+      false
     end
 
     def validate_model(model)
