@@ -44,37 +44,6 @@ Onellm.complete(
 end
 ```
 
-## Response (OpenAI Format)
-```json
-{
-    "id": "chatcmpl-565d891b-a42e-4c39-8d14-82a1f5208885",
-    "created": 1734366691,
-    "model": "claude-3-sonnet-20240229",
-    "object": "chat.completion",
-    "system_fingerprint": nil,
-    "choices": [
-        {
-            "finish_reason": "stop",
-            "index": 0,
-            "message": {
-                "content": "Hello! As an AI language model, I don't have feelings, but I'm operating properly and ready to assist you with any questions or tasks you may have. How can I help you today?",
-                "role": "assistant",
-                "tool_calls": nil,
-                "function_call": nil
-            }
-        }
-    ],
-    "usage": {
-        "completion_tokens": 43,
-        "prompt_tokens": 13,
-        "total_tokens": 56,
-        "completion_tokens_details": nil,
-        "prompt_tokens_details": {
-            "audio_tokens": nil,
-            "cached_tokens": 0
-        },
-        "cache_creation_input_tokens": 0,
-        "cache_read_input_tokens": 0
-    }
-}
-```
+## Testing
+
+Our testing philosophy emphasizes real-world integration testing by always hitting the actual APIs. We believe this provides the most accurate validation of our SDK's functionality and integration with various LLM providers.
