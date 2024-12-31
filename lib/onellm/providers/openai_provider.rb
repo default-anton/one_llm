@@ -107,13 +107,13 @@ module Onellm
     end
 
     def validate_content_array(content_array)
-      if content_array.none? { |part| part[:type] == 'text' }
-        raise ArgumentError, 'Content array must contain at least one text part'
-      end
-
       content_array.each do |part|
         validate_content_part(part)
       end
+
+      return unless content_array.none? { |part| part[:type] == 'text' }
+
+      raise ArgumentError, 'Content array must contain at least one text part'
     end
 
     def validate_content_part(part)

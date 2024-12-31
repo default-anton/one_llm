@@ -34,64 +34,6 @@ RSpec.describe Onellm::OpenAIProvider do
       expect(chunks.first.choices.first.delta.content).to be_a(String)
     end
 
-    it 'raises error for empty messages' do
-      expect do
-        provider.complete(model: valid_model, messages: [])
-      end.to raise_error(ArgumentError, /Messages cannot be empty/)
-    end
-
-    it 'raises error for invalid message structure' do
-      expect do
-        provider.complete(model: valid_model, messages: [{ role: 'user' }])
-      end.to raise_error(ArgumentError, /Message must be a hash with :role and :content keys only/)
-    end
-
-    it 'raises error for invalid role' do
-      expect do
-        provider.complete(model: valid_model, messages: [{ role: 'invalid', content: 'test' }])
-      end.to raise_error(ArgumentError, /Invalid role: invalid. Valid roles are: system, user, assistant/)
-    end
-
-    it 'raises error for invalid content type' do
-      expect do
-        provider.complete(model: valid_model, messages: [{ role: 'user', content: 123 }])
-      end.to raise_error(ArgumentError, /Content must be a string or an array of content parts/)
-    end
-
-    it 'raises error for invalid content array' do
-      expect do
-        provider.complete(model: valid_model, messages: [{ role: 'user', content: [{ type: 'invalid' }] }])
-      end.to raise_error(ArgumentError, /Invalid content part. Each part must have :type \(text, image_url\)/)
-    end
-
-    it 'raises error for missing text part in content array' do
-      expect do
-        provider.complete(model: valid_model,
-                          messages: [{ role: 'user',
-                                       content: [{ type: 'image_url',
-                                                   image_url: { url: 'https://example.com/image.jpg' } }] }])
-      end.to raise_error(ArgumentError, /Content array must contain at least one text part/)
-    end
-
-    it 'raises error for invalid image URL' do
-      expect do
-        provider.complete(model: valid_model,
-                          messages: [{ role: 'user',
-                                       content: [{ type: 'text', text: 'test' },
-                                                 { type: 'image_url', image_url: { url: 'invalid' } }] }])
-      end.to raise_error(ArgumentError, %r{Image URL must be a valid HTTP/HTTPS URL or data URI})
-    end
-
-    it 'raises error for invalid API key' do
-      Onellm.configure do |config|
-        config.openai_api_key = 'invalid-key'
-      end
-
-      expect do
-        provider.complete(model: valid_model, messages: valid_messages)
-      end.to raise_error(Onellm::ConfigurationError, /Invalid OpenAI API key format/)
-    end
-
     it 'handles image content in messages' do
       image_url = 'https://raw.githubusercontent.com/default-anton/onellm/refs/heads/main/spec/data/Delta_Air_Lines_B767-332_N130DL%20Small.jpeg'
       messages = [
@@ -147,6 +89,66 @@ RSpec.describe Onellm::OpenAIProvider do
       expect(response).to be_a(Onellm::Response)
       expect(response.choices).to be_an(Array)
       expect(response.choices.first.message.content).to be_a(String)
+    end
+
+    describe 'validation errors' do
+      it 'raises error for empty messages' do
+        expect do
+          provider.complete(model: valid_model, messages: [])
+        end.to raise_error(ArgumentError, /Messages cannot be empty/)
+      end
+
+      it 'raises error for invalid message structure' do
+        expect do
+          provider.complete(model: valid_model, messages: [{ role: 'user' }])
+        end.to raise_error(ArgumentError, /Message must be a hash with :role and :content keys only/)
+      end
+
+      it 'raises error for invalid role' do
+        expect do
+          provider.complete(model: valid_model, messages: [{ role: 'invalid', content: 'test' }])
+        end.to raise_error(ArgumentError, /Invalid role: invalid. Valid roles are: system, user, assistant/)
+      end
+
+      it 'raises error for invalid content type' do
+        expect do
+          provider.complete(model: valid_model, messages: [{ role: 'user', content: 123 }])
+        end.to raise_error(ArgumentError, /Content must be a string or an array of content parts/)
+      end
+
+      it 'raises error for invalid content array' do
+        expect do
+          provider.complete(model: valid_model, messages: [{ role: 'user', content: [{ type: 'invalid' }] }])
+        end.to raise_error(ArgumentError, /Invalid content part. Each part must have :type \(text, image_url\)/)
+      end
+
+      it 'raises error for missing text part in content array' do
+        expect do
+          provider.complete(model: valid_model,
+                            messages: [{ role: 'user',
+                                         content: [{ type: 'image_url',
+                                                     image_url: { url: 'https://example.com/image.jpg' } }] }])
+        end.to raise_error(ArgumentError, /Content array must contain at least one text part/)
+      end
+
+      it 'raises error for invalid image URL' do
+        expect do
+          provider.complete(model: valid_model,
+                            messages: [{ role: 'user',
+                                         content: [{ type: 'text', text: 'test' },
+                                                   { type: 'image_url', image_url: { url: 'invalid' } }] }])
+        end.to raise_error(ArgumentError, %r{Image URL must be a valid HTTP/HTTPS URL or data URI})
+      end
+
+      it 'raises error for invalid API key' do
+        Onellm.configure do |config|
+          allow(config).to receive(:openai_api_key).and_return('invalid-key')
+        end
+
+        expect do
+          provider.complete(model: valid_model, messages: valid_messages)
+        end.to raise_error(Onellm::ConfigurationError, /Invalid OpenAI API key format/)
+      end
     end
   end
 end
