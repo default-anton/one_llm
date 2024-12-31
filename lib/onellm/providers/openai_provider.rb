@@ -86,10 +86,8 @@ module Onellm
     end
 
     def validate_tools(tools, tool_choice)
-      if tool_choice && !tools
-        raise ArgumentError, 'Cannot specify tool_choice without tools'
-      end
-      
+      raise ArgumentError, 'Cannot specify tool_choice without tools' if tool_choice && !tools
+
       validate_tools_format(tools) if tools
       validate_tool_choice(tool_choice, tools) if tool_choice
     end
