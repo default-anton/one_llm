@@ -91,6 +91,104 @@ RSpec.describe Onellm::OpenAIProvider do
       expect(response.choices.first.message.content).to be_a(String)
     end
 
+    describe 'function calling' do
+      let(:weather_function) do
+        {
+          type: 'function',
+          function: {
+            name: 'get_current_weather',
+            description: 'Get the current weather in a given location',
+            parameters: {
+              type: 'object',
+              properties: {
+                location: {
+                  type: 'string',
+                  description: 'The city and state, e.g. San Francisco, CA'
+                },
+                unit: {
+                  type: 'string',
+                  enum: %w[celsius fahrenheit]
+                }
+              },
+              required: ['location']
+            }
+          }
+        }
+      end
+
+      it 'handles function calling with auto tool choice' do
+        response = provider.complete(
+          model: valid_model,
+          messages: [{ role: 'user', content: "What's the weather like in Boston today?" }],
+          tools: [weather_function],
+          tool_choice: 'auto'
+        )
+
+        expect(response).to be_a(Onellm::Response)
+        expect(response.choices).to be_an(Array)
+        expect(response.choices.first.message.tool_calls).to be_an(Array)
+        expect(response.choices.first.message.tool_calls.first.function.name).to eq('get_current_weather')
+      end
+
+      it 'handles function calling with specific tool choice' do
+        response = provider.complete(
+          model: valid_model,
+          messages: [{ role: 'user', content: "What's the weather like in Boston today?" }],
+          tools: [weather_function],
+          tool_choice: { type: 'function', function: { name: 'get_current_weather' } }
+        )
+
+        expect(response).to be_a(Onellm::Response)
+        expect(response.choices).to be_an(Array)
+        expect(response.choices.first.message.tool_calls).to be_an(Array)
+        expect(response.choices.first.message.tool_calls.first.function.name).to eq('get_current_weather')
+      end
+
+      describe 'validation errors' do
+        it 'raises error for invalid tools format' do
+          expect do
+            provider.complete(
+              model: valid_model,
+              messages: valid_messages,
+              tools: [{ invalid: 'format' }]
+            )
+          end.to raise_error(ArgumentError, /Tools must be an array of function definitions/)
+        end
+
+        it 'raises error for invalid tool choice format' do
+          expect do
+            provider.complete(
+              model: valid_model,
+              messages: valid_messages,
+              tools: [weather_function],
+              tool_choice: 'invalid'
+            )
+          end.to raise_error(ArgumentError, /Tool choice must be 'auto', 'none', or a function specification/)
+        end
+
+        it 'raises error for tool choice without tools' do
+          expect do
+            provider.complete(
+              model: valid_model,
+              messages: valid_messages,
+              tool_choice: 'auto'
+            )
+          end.to raise_error(ArgumentError, /Cannot specify tool_choice without tools/)
+        end
+
+        it 'raises error for non-existent tool in tool choice' do
+          expect do
+            provider.complete(
+              model: valid_model,
+              messages: valid_messages,
+              tools: [weather_function],
+              tool_choice: { type: 'function', function: { name: 'non_existent_function' } }
+            )
+          end.to raise_error(ArgumentError, /Tool choice function 'non_existent_function' not found in tools/)
+        end
+      end
+    end
+
     describe 'validation errors' do
       it 'raises error for empty messages' do
         expect do

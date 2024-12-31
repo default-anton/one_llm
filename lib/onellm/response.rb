@@ -47,6 +47,42 @@ module Onellm
     end
   end
 
+  # Represents a function call
+  class FunctionCall
+    attr_reader :name, :arguments
+
+    def initialize(attributes = {})
+      @name = attributes[:name]
+      @arguments = attributes[:arguments]
+    end
+
+    def to_h
+      {
+        name: name,
+        arguments: arguments
+      }
+    end
+  end
+
+  # Represents a tool call
+  class ToolCall
+    attr_reader :id, :type, :function
+
+    def initialize(attributes = {})
+      @id = attributes[:id]
+      @type = attributes[:type] || 'function'
+      @function = FunctionCall.new(attributes[:function] || {})
+    end
+
+    def to_h
+      {
+        id: id,
+        type: type,
+        function: function.to_h
+      }
+    end
+  end
+
   # Represents the message content in a choice
   class Message
     attr_reader :content, :role, :tool_calls, :function_call
@@ -54,16 +90,16 @@ module Onellm
     def initialize(attributes = {})
       @content = attributes[:content]
       @role = attributes[:role]
-      @tool_calls = attributes[:tool_calls]
-      @function_call = attributes[:function_call]
+      @tool_calls = attributes[:tool_calls]&.map { |tc| ToolCall.new(tc) } || []
+      @function_call = attributes[:function_call] ? FunctionCall.new(attributes[:function_call]) : nil
     end
 
     def to_h
       {
         content: content,
         role: role,
-        tool_calls: tool_calls,
-        function_call: function_call
+        tool_calls: tool_calls.map(&:to_h),
+        function_call: function_call&.to_h
       }
     end
   end

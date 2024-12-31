@@ -22,10 +22,16 @@ module Onellm
       @configuration.validate!
     end
 
-    def complete(model:, messages:, stream: false)
+    def complete(model:, messages:, stream: false, tools: nil, tool_choice: nil)
       provider_class = @provider_registry.get_provider(model)
       provider = provider_class.new(@configuration)
-      response = provider.complete(model: model.split('/').last, messages: messages, stream: stream) do |chunk|
+      response = provider.complete(
+        model: model.split('/').last,
+        messages: messages,
+        stream: stream,
+        tools: tools,
+        tool_choice: tool_choice
+      ) do |chunk|
         yield DeltaResponse.new(chunk)
       end
 

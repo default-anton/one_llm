@@ -43,8 +43,9 @@ module Onellm
       'chatgpt-4o-latest'
     ].freeze
 
-    def complete(model:, messages:, stream: false, &block)
+    def complete(model:, messages:, stream: false, tools: nil, tool_choice: nil, &block)
       validate_inputs(model, messages)
+      validate_tools(tools, tool_choice) if tools || tool_choice
 
       uri = URI.parse(OPENAI_API_URL)
       http = Net::HTTP.new(uri.host, uri.port)
@@ -53,7 +54,7 @@ module Onellm
       request = Net::HTTP::Post.new(uri)
       configure_request(request)
 
-      payload = build_payload(model, messages, stream)
+      payload = build_payload(model, messages, stream, tools, tool_choice)
       request.body = payload.to_json
 
       if stream
@@ -82,6 +83,44 @@ module Onellm
         validate_role(message[:role])
         validate_content(message[:content])
       end
+    end
+
+    def validate_tools(tools, tool_choice)
+      if tool_choice && !tools
+        raise ArgumentError, 'Cannot specify tool_choice without tools'
+      end
+      
+      validate_tools_format(tools) if tools
+      validate_tool_choice(tool_choice, tools) if tool_choice
+    end
+
+    def validate_tools_format(tools)
+      return if tools.is_a?(Array) && tools.all? { |t| t.is_a?(Hash) && t[:type] == 'function' }
+
+      raise ArgumentError, 'Tools must be an array of function definitions'
+    end
+
+    def validate_tool_choice(tool_choice, tools)
+      case tool_choice
+      when 'auto', 'none'
+        nil
+      when Hash
+        if tool_choice[:type] != 'function' || !tool_choice[:function].is_a?(Hash)
+          raise ArgumentError, "Tool choice must be 'auto', 'none', or a function specification"
+        end
+
+        validate_tool_choice_function(tool_choice[:function][:name], tools)
+      else
+        raise ArgumentError, "Tool choice must be 'auto', 'none', or a function specification"
+      end
+    end
+
+    def validate_tool_choice_function(function_name, tools)
+      return unless tools
+
+      return if tools.any? { |t| t[:function][:name] == function_name }
+
+      raise ArgumentError, "Tool choice function '#{function_name}' not found in tools"
     end
 
     def validate_message_structure(message)
@@ -173,12 +212,15 @@ module Onellm
       request['Accept'] = 'application/json'
     end
 
-    def build_payload(model, messages, stream)
-      {
+    def build_payload(model, messages, stream, tools = nil, tool_choice = nil)
+      payload = {
         model: model,
         messages: messages,
         stream: stream
       }
+      payload[:tools] = tools if tools
+      payload[:tool_choice] = tool_choice if tool_choice
+      payload
     end
 
     def handle_standard_response(http, request)
