@@ -47,20 +47,36 @@ module Onellm
     end
   end
 
+  # Represents an individual tool call in a streaming chunk
+  class DeltaToolCall < ToolCall
+    attr_reader :index
+
+    def initialize(attributes = {})
+      @index = attributes[:index]
+      super
+    end
+
+    def to_h
+      super.merge(index: index)
+    end
+  end
+
   # Represents the delta content in a streaming chunk
   class Delta
-    attr_reader :content, :role
+    attr_reader :content, :role, :tool_calls
 
     def initialize(attributes = {})
       @content = attributes[:content]
       @role = attributes[:role]
+      @tool_calls = attributes[:tool_calls]&.map { |tc| DeltaToolCall.new(tc) } || []
     end
 
     def to_h
       {
         content: content,
-        role: role
-      }
+        role: role,
+        tool_calls: tool_calls.map(&:to_h)
+      }.compact
     end
   end
 end

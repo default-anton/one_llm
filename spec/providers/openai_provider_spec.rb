@@ -144,6 +144,29 @@ RSpec.describe Onellm::OpenAIProvider do
         expect(response.choices.first.message.tool_calls.first.function.name).to eq('get_current_weather')
       end
 
+      it 'handles function calling in streaming mode' do
+        chunks = []
+        provider.complete(
+          model: valid_model,
+          messages: [{ role: 'user', content: "What's the weather like in Boston today?" }],
+          tools: [weather_function],
+          tool_choice: { type: 'function', function: { name: 'get_current_weather' } },
+          stream: true
+        ) do |chunk|
+          chunks << chunk
+        end
+
+        expect(chunks).to be_an(Array)
+        expect(chunks).not_to be_empty
+
+        function_chunk = chunks.find { |c| c.choices.first.delta.tool_calls }
+        expect(function_chunk).not_to be_nil
+
+        tool_call = function_chunk.choices.first.delta.tool_calls.first
+        expect(tool_call.function.name).to eq('get_current_weather')
+        expect(tool_call.function.arguments).to be_a(String)
+      end
+
       describe 'validation errors' do
         it 'raises error for invalid tools format' do
           expect do
