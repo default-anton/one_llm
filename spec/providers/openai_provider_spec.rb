@@ -391,6 +391,19 @@ RSpec.describe Onellm::OpenAIProvider do
         expect(response.choices.first.logprobs.content.first.top_logprobs).to be_an(Array)
       end
 
+      it 'returns completion tokens details', :vcr do
+        response = provider.complete(
+          model: valid_model,
+          messages: valid_messages
+        )
+
+        expect(response).to be_a(Onellm::Response)
+        expect(response.usage.completion_tokens_details).to be_a(Onellm::CompletionTokensDetails)
+        expect(response.usage.completion_tokens_details.reasoning_tokens).to be_a(Integer)
+        expect(response.usage.completion_tokens_details.accepted_prediction_tokens).to be_a(Integer)
+        expect(response.usage.completion_tokens_details.rejected_prediction_tokens).to be_a(Integer)
+      end
+
       it 'raises error for invalid top_p' do
         expect do
           provider.complete(

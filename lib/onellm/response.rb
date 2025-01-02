@@ -162,6 +162,25 @@ module Onellm
     end
   end
 
+  # Represents completion tokens details
+  class CompletionTokensDetails
+    attr_reader :reasoning_tokens, :accepted_prediction_tokens, :rejected_prediction_tokens
+
+    def initialize(attributes = {})
+      @reasoning_tokens = attributes[:reasoning_tokens]
+      @accepted_prediction_tokens = attributes[:accepted_prediction_tokens]
+      @rejected_prediction_tokens = attributes[:rejected_prediction_tokens]
+    end
+
+    def to_h
+      {
+        reasoning_tokens: reasoning_tokens,
+        accepted_prediction_tokens: accepted_prediction_tokens,
+        rejected_prediction_tokens: rejected_prediction_tokens
+      }
+    end
+  end
+
   # Represents the token usage information
   class Usage
     attr_reader :completion_tokens, :prompt_tokens, :total_tokens,
@@ -172,7 +191,9 @@ module Onellm
       @completion_tokens = attributes[:completion_tokens]
       @prompt_tokens = attributes[:prompt_tokens]
       @total_tokens = attributes[:total_tokens]
-      @completion_tokens_details = attributes[:completion_tokens_details]
+      @completion_tokens_details = if attributes[:completion_tokens_details]
+                                     CompletionTokensDetails.new(attributes[:completion_tokens_details])
+                                   end
       @prompt_tokens_details = attributes[:prompt_tokens_details] || {}
       @cache_creation_input_tokens = attributes[:cache_creation_input_tokens]
       @cache_read_input_tokens = attributes[:cache_read_input_tokens]
@@ -183,7 +204,7 @@ module Onellm
         completion_tokens: completion_tokens,
         prompt_tokens: prompt_tokens,
         total_tokens: total_tokens,
-        completion_tokens_details: completion_tokens_details,
+        completion_tokens_details: completion_tokens_details&.to_h,
         prompt_tokens_details: prompt_tokens_details,
         cache_creation_input_tokens: cache_creation_input_tokens,
         cache_read_input_tokens: cache_read_input_tokens
