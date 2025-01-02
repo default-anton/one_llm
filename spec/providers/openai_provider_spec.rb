@@ -374,6 +374,23 @@ RSpec.describe Onellm::OpenAIProvider do
         end.to raise_error(ArgumentError, /logprobs must be true when using top_logprobs/)
       end
 
+      it 'returns logprobs when requested', :vcr do
+        response = provider.complete(
+          model: valid_model,
+          messages: valid_messages,
+          logprobs: true,
+          top_logprobs: 2
+        )
+
+        expect(response).to be_a(Onellm::Response)
+        expect(response.choices.first.logprobs).to be_a(Onellm::Logprobs)
+        expect(response.choices.first.logprobs.content).to be_a(Array)
+        expect(response.choices.first.logprobs.content.first).to be_a(Onellm::ContentLogprob)
+        expect(response.choices.first.logprobs.content.first.token).to be_a(String)
+        expect(response.choices.first.logprobs.content.first.logprob).to be_a(Numeric)
+        expect(response.choices.first.logprobs.content.first.top_logprobs).to be_an(Array)
+      end
+
       it 'raises error for invalid top_p' do
         expect do
           provider.complete(
