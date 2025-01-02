@@ -2,6 +2,7 @@
 
 module Onellm
   # Represents the complete response from an LLM API call
+  # TODO: add all usage fields
   class Response
     attr_reader :id, :created, :model, :object, :system_fingerprint, :choices, :usage
 
@@ -30,19 +31,21 @@ module Onellm
 
   # Represents a single choice in the response
   class Choice
-    attr_reader :finish_reason, :index, :message
+    attr_reader :finish_reason, :index, :message, :logprobs
 
     def initialize(attributes = {})
       @finish_reason = attributes[:finish_reason]
       @index = attributes[:index]
       @message = Message.new(attributes[:message] || {})
+      @logprobs = attributes[:logprobs] ? Logprobs.new(attributes[:logprobs]) : nil
     end
 
     def to_h
       {
         finish_reason: finish_reason,
         index: index,
-        message: message.to_h
+        message: message.to_h,
+        logprobs: logprobs&.to_h
       }
     end
   end
@@ -100,6 +103,61 @@ module Onellm
         role: role,
         tool_calls: tool_calls.map(&:to_h),
         function_call: function_call&.to_h
+      }
+    end
+  end
+
+  # Represents individual token probability information
+  class ContentLogprob
+    attr_reader :token, :logprob, :bytes, :top_logprobs
+
+    def initialize(attributes = {})
+      @token = attributes[:token]
+      @logprob = attributes[:logprob]
+      @bytes = attributes[:bytes]
+      @top_logprobs = attributes[:top_logprobs]&.map { |tl| TopLogprob.new(tl) } || []
+    end
+
+    def to_h
+      {
+        token: token,
+        logprob: logprob,
+        bytes: bytes,
+        top_logprobs: top_logprobs.map(&:to_h)
+      }
+    end
+  end
+
+  # Represents token-level probability information
+  class Logprobs
+    attr_reader :content
+
+    def initialize(attributes = {})
+      @content = attributes[:content]&.map { |cl| ContentLogprob.new(cl) } || []
+    end
+
+    def to_h
+      {
+        content: content.map(&:to_h)
+      }
+    end
+  end
+
+  # Represents top log probability information
+  class TopLogprob
+    attr_reader :token, :logprob, :bytes
+
+    def initialize(attributes = {})
+      @token = attributes[:token]
+      @logprob = attributes[:logprob]
+      @bytes = attributes[:bytes]
+    end
+
+    def to_h
+      {
+        token: token,
+        logprob: logprob,
+        bytes: bytes
       }
     end
   end
