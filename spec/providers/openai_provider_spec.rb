@@ -6,6 +6,7 @@ require 'base64'
 RSpec.describe Onellm::OpenAIProvider do
   let(:provider) { Onellm::Client.new }
   let(:valid_model) { 'openai/gpt-4o-mini' }
+  let(:valid_reasoning_model) { 'openai/o1-mini' }
   let(:valid_messages) { [{ role: 'user', content: 'Hello, how are you?' }] }
 
   before do
@@ -19,6 +20,89 @@ RSpec.describe Onellm::OpenAIProvider do
       expect(response).to be_a(Onellm::Response)
       expect(response.choices).to be_an(Array)
       expect(response.choices.first.message.content).to be_a(String)
+    end
+
+    it 'handles max_tokens parameter successfully', :vcr do
+      response = provider.complete(
+        model: valid_model,
+        messages: valid_messages,
+        max_tokens: 100
+      )
+
+      expect(response).to be_a(Onellm::Response)
+      expect(response.choices).to be_an(Array)
+      expect(response.choices.first.message.content).to be_a(String)
+    end
+
+    it 'handles max_completion_tokens parameter successfully', :vcr do
+      response = provider.complete(
+        model: valid_model,
+        messages: valid_messages,
+        max_completion_tokens: 100
+      )
+
+      expect(response).to be_a(Onellm::Response)
+      expect(response.choices).to be_an(Array)
+      expect(response.choices.first.message.content).to be_a(String)
+    end
+
+    it 'handles presence_penalty, top_p, and temperature parameters successfully', :vcr do
+      response = provider.complete(
+        model: valid_model,
+        messages: valid_messages,
+        presence_penalty: 0.5,
+        top_p: 0.9,
+        temperature: 0.7
+      )
+
+      expect(response).to be_a(Onellm::Response)
+      expect(response.choices).to be_an(Array)
+      expect(response.choices.first.message.content).to be_a(String)
+    end
+
+    it 'stops generation at single stop sequence', :vcr do
+      response = provider.complete(
+        model: valid_model,
+        messages: [
+          {
+            role: 'user',
+            content: <<~PROMPT
+              List three fruits.
+              Make sure apple is always second.
+              Return fruits in lowercase delimited by commas.
+            PROMPT
+          }
+        ],
+        stop: 'apple'
+      )
+
+      expect(response).to be_a(Onellm::Response)
+      expect(response.choices).to be_an(Array)
+      expect(response.choices.first.message.content).not_to include('apple')
+      expect(response.choices.first.message.content.size).to be > 0
+    end
+
+    it 'stops generation at multiple stop sequences', :vcr do
+      response = provider.complete(
+        model: valid_model,
+        messages: [
+          {
+            role: 'user',
+            content: <<~PROMPT
+              List three fruits.
+              Make sure apple is always second and banana is always last.
+              Return fruits in lowercase delimited by commas.
+            PROMPT
+          }
+        ],
+        stop: %w[apple banana]
+      )
+
+      expect(response).to be_a(Onellm::Response)
+      expect(response.choices).to be_an(Array)
+      expect(response.choices.first.message.content).not_to include('apple')
+      expect(response.choices.first.message.content).not_to include('banana')
+      expect(response.choices.first.message.content.size).to be > 0
     end
 
     it 'yields streaming chunks', :vcr do
@@ -217,6 +301,117 @@ RSpec.describe Onellm::OpenAIProvider do
         expect do
           provider.complete(model: valid_model, messages: [])
         end.to raise_error(ArgumentError, /Messages cannot be empty/)
+      end
+
+      it 'raises error for invalid reasoning_effort' do
+        expect do
+          provider.complete(
+            model: valid_reasoning_model,
+            messages: valid_messages,
+            reasoning_effort: 'invalid'
+          )
+        end.to raise_error(ArgumentError, /Invalid reasoning_effort/)
+      end
+
+      it 'raises error for invalid frequency_penalty' do
+        expect do
+          provider.complete(
+            model: valid_model,
+            messages: valid_messages,
+            frequency_penalty: 3.0
+          )
+        end.to raise_error(ArgumentError, /frequency_penalty must be between/)
+      end
+
+      it 'raises error for invalid presence_penalty' do
+        expect do
+          provider.complete(
+            model: valid_model,
+            messages: valid_messages,
+            presence_penalty: -3.0
+          )
+        end.to raise_error(ArgumentError, /presence_penalty must be between/)
+      end
+
+      it 'raises error for invalid logit_bias format' do
+        expect do
+          provider.complete(
+            model: valid_model,
+            messages: valid_messages,
+            logit_bias: 'invalid'
+          )
+        end.to raise_error(ArgumentError, /logit_bias must be a hash/)
+      end
+
+      it 'raises error for invalid logit_bias values' do
+        expect do
+          provider.complete(
+            model: valid_model,
+            messages: valid_messages,
+            logit_bias: { '1' => 200 }
+          )
+        end.to raise_error(ArgumentError, /logit_bias values must be between/)
+      end
+
+      it 'raises error for invalid top_logprobs' do
+        expect do
+          provider.complete(
+            model: valid_model,
+            messages: valid_messages,
+            top_logprobs: 25
+          )
+        end.to raise_error(ArgumentError, /top_logprobs must be between/)
+      end
+
+      it 'raises error for top_logprobs without logprobs' do
+        expect do
+          provider.complete(
+            model: valid_model,
+            messages: valid_messages,
+            top_logprobs: 5,
+            logprobs: false
+          )
+        end.to raise_error(ArgumentError, /logprobs must be true when using top_logprobs/)
+      end
+
+      it 'raises error for invalid top_p' do
+        expect do
+          provider.complete(
+            model: valid_model,
+            messages: valid_messages,
+            top_p: 1.5
+          )
+        end.to raise_error(ArgumentError, /top_p must be between/)
+      end
+
+      it 'raises error for invalid temperature' do
+        expect do
+          provider.complete(
+            model: valid_model,
+            messages: valid_messages,
+            temperature: 3.0
+          )
+        end.to raise_error(ArgumentError, /temperature must be between/)
+      end
+
+      it 'raises error for invalid stop format' do
+        expect do
+          provider.complete(
+            model: valid_model,
+            messages: valid_messages,
+            stop: 123
+          )
+        end.to raise_error(ArgumentError, /stop must be a string or an array of strings/)
+      end
+
+      it 'raises error for too many stop sequences' do
+        expect do
+          provider.complete(
+            model: valid_model,
+            messages: valid_messages,
+            stop: %w[1 2 3 4 5]
+          )
+        end.to raise_error(ArgumentError, /stop can have at most 4 sequences/)
       end
 
       it 'raises error for invalid message structure' do

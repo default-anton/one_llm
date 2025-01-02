@@ -22,7 +22,11 @@ module Onellm
       @configuration.validate!
     end
 
-    def complete(model:, messages:, stream: false, tools: nil, tool_choice: nil)
+    def complete(model:, messages:, stream: false, tools: nil, tool_choice: nil,
+                 reasoning_effort: 'medium', metadata: nil, frequency_penalty: 0,
+                 logit_bias: nil, logprobs: false, top_logprobs: nil,
+                 max_tokens: nil, max_completion_tokens: nil, presence_penalty: 0,
+                 top_p: 1, temperature: 1, stop: nil)
       provider_class = @provider_registry.get_provider(model)
       provider = provider_class.new(@configuration)
       response = provider.complete(
@@ -30,7 +34,19 @@ module Onellm
         messages: messages,
         stream: stream,
         tools: tools,
-        tool_choice: tool_choice
+        tool_choice: tool_choice,
+        reasoning_effort: reasoning_effort,
+        metadata: metadata,
+        frequency_penalty: frequency_penalty,
+        logit_bias: logit_bias,
+        logprobs: logprobs,
+        top_logprobs: top_logprobs,
+        max_tokens: max_tokens,
+        max_completion_tokens: max_completion_tokens,
+        presence_penalty: presence_penalty,
+        top_p: top_p,
+        temperature: temperature,
+        stop: stop
       ) do |chunk|
         yield DeltaResponse.new(chunk)
       end

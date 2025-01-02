@@ -43,9 +43,25 @@ module Onellm
       'chatgpt-4o-latest'
     ].freeze
 
-    def complete(model:, messages:, stream: false, tools: nil, tool_choice: nil, &block)
+    def complete(model:, messages:, stream: false, tools: nil, tool_choice: nil,
+                 reasoning_effort: 'medium', metadata: nil, frequency_penalty: 0,
+                 logit_bias: nil, logprobs: false, top_logprobs: nil,
+                 max_tokens: nil, max_completion_tokens: nil, presence_penalty: 0,
+                 top_p: 1, temperature: 1, stop: nil, &block)
       validate_inputs(model, messages)
       validate_tools(tools, tool_choice) if tools || tool_choice
+      validate_reasoning_effort(model, reasoning_effort)
+      validate_parameters(
+        frequency_penalty: frequency_penalty,
+        logit_bias: logit_bias,
+        logprobs: logprobs,
+        top_logprobs: top_logprobs,
+        max_tokens: max_tokens,
+        presence_penalty: presence_penalty,
+        top_p: top_p,
+        temperature: temperature,
+        stop: stop
+      )
 
       uri = URI.parse(OPENAI_API_URL)
       http = Net::HTTP.new(uri.host, uri.port)
@@ -54,7 +70,25 @@ module Onellm
       request = Net::HTTP::Post.new(uri)
       configure_request(request)
 
-      payload = build_payload(model, messages, stream, tools, tool_choice)
+      payload = build_payload(
+        model: model,
+        messages: messages,
+        stream: stream,
+        tools: tools,
+        tool_choice: tool_choice,
+        reasoning_effort: reasoning_effort,
+        metadata: metadata,
+        frequency_penalty: frequency_penalty,
+        logit_bias: logit_bias,
+        logprobs: logprobs,
+        top_logprobs: top_logprobs,
+        max_tokens: max_tokens,
+        max_completion_tokens: max_completion_tokens,
+        presence_penalty: presence_penalty,
+        top_p: top_p,
+        temperature: temperature,
+        stop: stop
+      )
       request.body = payload.to_json
 
       if stream
@@ -119,6 +153,59 @@ module Onellm
       return if tools.any? { |t| t[:function][:name] == function_name }
 
       raise ArgumentError, "Tool choice function '#{function_name}' not found in tools"
+    end
+
+    def validate_reasoning_effort(model, reasoning_effort)
+      return unless model.start_with?('o1')
+
+      return if %w[low medium high].include?(reasoning_effort)
+
+      raise ArgumentError, "Invalid reasoning_effort: #{reasoning_effort}. Must be one of: low, medium, high"
+    end
+
+    def validate_parameters(frequency_penalty:, logit_bias:, logprobs:, top_logprobs:,
+                            max_tokens:, presence_penalty:, top_p:, temperature:, stop:)
+      validate_number_range(frequency_penalty, -2.0, 2.0, 'frequency_penalty') if frequency_penalty
+      validate_number_range(presence_penalty, -2.0, 2.0, 'presence_penalty') if presence_penalty
+      validate_number_range(top_p, 0, 1, 'top_p') if top_p
+      validate_number_range(temperature, 0, 2, 'temperature') if temperature
+
+      if logit_bias
+        raise ArgumentError, 'logit_bias must be a hash mapping token IDs to bias values' unless logit_bias.is_a?(Hash)
+
+        logit_bias.each do |token_id, bias|
+          raise ArgumentError, 'logit_bias keys must be strings representing token IDs' unless token_id.is_a?(String)
+
+          unless bias.between?(-100, 100)
+            raise ArgumentError, "logit_bias values must be between -100 and 100, got #{bias}"
+          end
+        end
+      end
+
+      if top_logprobs
+        unless top_logprobs.between?(0, 20)
+          raise ArgumentError, "top_logprobs must be between 0 and 20, got #{top_logprobs}"
+        end
+        raise ArgumentError, 'logprobs must be true when using top_logprobs' unless logprobs
+      end
+
+      if stop
+        unless stop.is_a?(String) || stop.is_a?(Array)
+          raise ArgumentError, 'stop must be a string or an array of strings'
+        end
+
+        raise ArgumentError, 'stop can have at most 4 sequences' if Array(stop).size > 4
+      end
+
+      return unless max_tokens
+
+      warn '[DEPRECATION] max_tokens is deprecated in favor of max_completion_tokens'
+    end
+
+    def validate_number_range(value, min, max, param_name)
+      return if value.between?(min, max)
+
+      raise ArgumentError, "#{param_name} must be between #{min} and #{max}, got #{value}"
     end
 
     def validate_message_structure(message)
@@ -210,14 +297,47 @@ module Onellm
       request['Accept'] = 'application/json'
     end
 
-    def build_payload(model, messages, stream, tools = nil, tool_choice = nil)
+    def build_payload(
+      model:,
+      messages:,
+      stream:,
+      tools:,
+      tool_choice:,
+      reasoning_effort:,
+      metadata:,
+      frequency_penalty:,
+      logit_bias:,
+      logprobs:,
+      top_logprobs:,
+      max_tokens:,
+      max_completion_tokens:,
+      presence_penalty:,
+      top_p:,
+      temperature:,
+      stop:
+    )
       payload = {
         model: model,
         messages: messages,
-        stream: stream
+        stream: stream,
+        frequency_penalty: frequency_penalty,
+        presence_penalty: presence_penalty,
+        top_p: top_p,
+        temperature: temperature
       }
+
+      payload[:logprobs] = logprobs unless logprobs.nil?
+      payload[:metadata] = metadata if metadata
       payload[:tools] = tools if tools
       payload[:tool_choice] = tool_choice if tool_choice
+      payload[:logit_bias] = logit_bias if logit_bias
+      payload[:top_logprobs] = top_logprobs if top_logprobs
+      payload[:max_tokens] = max_tokens if max_tokens
+      payload[:max_completion_tokens] = max_completion_tokens if max_completion_tokens
+      payload[:stop] = stop if stop
+
+      payload[:reasoning_effort] = reasoning_effort if model.start_with?('o1')
+
       payload
     end
 
