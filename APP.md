@@ -43,7 +43,3 @@ Onellm.complete(
   puts part.choices.first.delta.content
 end
 ```
-
-## Testing
-
-Our testing philosophy emphasizes real-world integration testing by always hitting the actual APIs. We believe this provides the most accurate validation of our SDK's functionality and integration with various LLM providers.
