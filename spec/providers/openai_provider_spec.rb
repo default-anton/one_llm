@@ -13,7 +13,7 @@ RSpec.describe Onellm::OpenAIProvider do
   end
 
   describe '#complete' do
-    it 'returns a successful response' do
+    it 'returns a successful response', :vcr do
       response = provider.complete(model: valid_model, messages: valid_messages)
 
       expect(response).to be_a(Onellm::Response)
@@ -21,7 +21,7 @@ RSpec.describe Onellm::OpenAIProvider do
       expect(response.choices.first.message.content).to be_a(String)
     end
 
-    it 'yields streaming chunks' do
+    it 'yields streaming chunks', :vcr do
       chunks = []
       provider.complete(model: valid_model, messages: valid_messages, stream: true) do |chunk|
         chunks << chunk
@@ -34,7 +34,7 @@ RSpec.describe Onellm::OpenAIProvider do
       expect(chunks.first.choices.first.delta.content).to be_a(String)
     end
 
-    it 'handles image content in messages' do
+    it 'handles image content in messages', :vcr do
       image_url = 'https://raw.githubusercontent.com/default-anton/onellm/refs/heads/main/spec/data/Delta_Air_Lines_B767-332_N130DL%20Small.jpeg'
       messages = [
         {
@@ -61,7 +61,7 @@ RSpec.describe Onellm::OpenAIProvider do
       expect(response.choices.first.message.content).to be_a(String)
     end
 
-    it 'handles Base64 encoded local image content in messages' do
+    it 'handles Base64 encoded local image content in messages', :vcr do
       # Read and encode the local image file
       image_path = Pathname(__dir__).parent.join('data', 'Delta_Air_Lines_B767-332_N130DL Small.jpeg')
       base64_image = Base64.strict_encode64(image_path.read(mode: 'rb'))
@@ -116,7 +116,7 @@ RSpec.describe Onellm::OpenAIProvider do
         }
       end
 
-      it 'handles function calling with auto tool choice' do
+      it 'handles function calling with auto tool choice', :vcr do
         response = provider.complete(
           model: valid_model,
           messages: [{ role: 'user', content: "What's the weather like in Boston today?" }],
@@ -130,7 +130,7 @@ RSpec.describe Onellm::OpenAIProvider do
         expect(response.choices.first.message.tool_calls.first.function.name).to eq('get_current_weather')
       end
 
-      it 'handles function calling with specific tool choice' do
+      it 'handles function calling with specific tool choice', :vcr do
         response = provider.complete(
           model: valid_model,
           messages: [{ role: 'user', content: "What's the weather like in Boston today?" }],
@@ -144,7 +144,7 @@ RSpec.describe Onellm::OpenAIProvider do
         expect(response.choices.first.message.tool_calls.first.function.name).to eq('get_current_weather')
       end
 
-      it 'handles function calling in streaming mode' do
+      it 'handles function calling in streaming mode', :vcr do
         chunks = []
         provider.complete(
           model: valid_model,
