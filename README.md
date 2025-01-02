@@ -53,7 +53,7 @@ end
     "created": 1734366691,
     "model": "claude-3-sonnet-20240229",
     "object": "chat.completion",
-    "system_fingerprint": nil,
+    "system_fingerprint": null,
     "choices": [
         {
             "finish_reason": "stop",
@@ -61,8 +61,8 @@ end
             "message": {
                 "content": "Hello! As an AI language model, I don't have feelings, but I'm operating properly and ready to assist you with any questions or tasks you may have. How can I help you today?",
                 "role": "assistant",
-                "tool_calls": nil,
-                "function_call": nil
+                "tool_calls": null,
+                "function_call": null
             }
         }
     ],
@@ -70,9 +70,9 @@ end
         "completion_tokens": 43,
         "prompt_tokens": 13,
         "total_tokens": 56,
-        "completion_tokens_details": nil,
+        "completion_tokens_details": null,
         "prompt_tokens_details": {
-            "audio_tokens": nil,
+            "audio_tokens": null,
             "cached_tokens": 0
         },
         "cache_creation_input_tokens": 0,
